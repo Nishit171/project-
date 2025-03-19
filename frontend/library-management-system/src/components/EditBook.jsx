@@ -1,10 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import axios from "../services/api"
 
-const AddBook = () => {
+const EditBook = () => {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -12,25 +16,47 @@ const AddBook = () => {
     year: "",
     description: "",
   })
-  const [error, setError] = useState("")
-  const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchBook = async () => {
+      try {
+        const { data } = await axios.get(`/books/${id}`)
+        setFormData({
+          title: data.title,
+          author: data.author,
+          genre: data.genre,
+          year: data.year,
+          description: data.description || "",
+        })
+        setLoading(false)
+      } catch (err) {
+        console.error("Error fetching book:", err)
+        setError("Failed to load book data")
+        setLoading(false)
+      }
+    }
+
+    fetchBook()
+  }, [id])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.post("/books", formData)
-      alert("Book added successfully!")
+      await axios.put(`/books/${id}`, formData)
+      alert("Book updated successfully!")
       navigate("/")
     } catch (err) {
-      console.error("Error adding book:", err)
-      setError("Failed to add book. Please try again.")
+      console.error("Error updating book:", err)
+      setError("Failed to update book. Please try again.")
     }
   }
 
+  if (loading) return <h2>Loading...</h2>
+  if (error) return <p className="error-message">{error}</p>
+
   return (
     <div className="form-container">
-      <h2>Add New Book</h2>
-      {error && <p className="error-message">{error}</p>}
+      <h2>Edit Book</h2>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -71,7 +97,7 @@ const AddBook = () => {
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         ></textarea>
         <div className="form-buttons">
-          <button type="submit">Add Book</button>
+          <button type="submit">Update Book</button>
           <button type="button" onClick={() => navigate("/")} className="cancel-btn">
             Cancel
           </button>
@@ -81,5 +107,5 @@ const AddBook = () => {
   )
 }
 
-export default AddBook
+export default EditBook
 
